@@ -69,7 +69,7 @@ with new_t as
 		sales
 	group by 
 		customer_id, product_id
-);
+)
 
 Select 
 	t.customer_id, 
@@ -209,18 +209,34 @@ group by
 	s.customer_id;
 
 -- 11. Join all the tables to show customer_id, order_date, product_name, price and their membership status on that day
-SELECT 
-	s.customer_id, 
-	s.order_date, 
-	m.product_name, 
-	m.price, 
-	CASE 
-		WHEN s.order_date >= mem.join_date THEN 'Y'
-		ELSE 'N'
-	END AS should_rank
-FROM 
-	sales AS s
-JOIN 
-	menu AS m ON s.product_id = m.product_id
-LEFT JOIN 
-	members AS mem ON mem.customer_id = s.customer_id
+with all_join as (
+	Select 
+		s.customer_id, 
+		s.order_date, 
+		m.product_name, 
+		m.price, 
+		Case 
+			When s.order_date >= mem.join_date then 'Y'
+			Else 'N'
+		End as should_rank
+	From 
+		sales as s
+	Join 
+		menu as m on s.product_id = m.product_id
+	Left Join 
+		members as mem on mem.customer_id = s.customer_id
+)
+
+Select * from all_join;
+
+-- 12. Along with information in point 11, extract ranking of the customers excluding non members.
+-- Customer who became members will be ranked after joining date
+
+Select 
+	*,
+    Case 
+		when should_rank = 'Y' then dense_rank() over(partition by customer_id, should_rank order by order_date)
+        Else null
+	End as ranking
+From all_join;
+	
